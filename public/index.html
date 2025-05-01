@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P File Transfer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="/__/firebase/7.13.1/firebase-app.js"></script>
+    <!-- include only the Firebase features as you need -->
+    <script defer src="/__/firebase/7.13.1/firebase-firestore.js"></script>
+    <!-- initialize the SDK after all desired features are loaded -->
+    <script defer src="/__/firebase/init.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>P2P File Transfer</h1>
+            <p class="subtitle">Fast, secure file transfers directly between devices</p>
+        </header>
+
+        <div class="app-container">
+            <!-- Send Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-icon">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <h2 class="panel-title">Send Files</h2>
+                </div>
+
+                <div class="file-drop-area" id="fileDropArea">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #adb5bd;"></i>
+                    <p>Drag & drop files here or click to browse</p>
+                    <p class="file-msg" id="fileMessage">No file selected</p>
+                    <input type="file" id="fileInput" multiple>
+                </div>
+
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <div class="file-info-item">
+                        <span class="file-info-label">File name:</span>
+                        <span id="fileName">-</span>
+                    </div>
+                    <div class="file-info-item">
+                        <span class="file-info-label">File size:</span>
+                        <span id="fileSize">-</span>
+                    </div>
+                    <div class="file-info-item">
+                        <span class="file-info-label">File type:</span>
+                        <span id="fileType">-</span>
+                    </div>
+                </div>
+
+                <div class="progress-container" id="progressContainer" style="display: none;">
+                    <div class="progress-info">
+                        <span>Transfer progress</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="speed-indicator" id="speedIndicator">-</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="sessionId" class="form-label">Session ID</label>
+                    <div style="display: flex;">
+                        <input type="text" id="sessionId" class="form-control" readonly>
+                        <button class="copy-btn" id="copySessionId" title="Copy to clipboard">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="qr-code-container" id="qrCodeContainer" style="display: none;">
+                    <p>Scan to connect</p>
+                    <div class="qr-code" id="qrCode"></div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="createBtn" class="btn" disabled>
+                        <i class="fas fa-plus"></i> Create Session
+                    </button>
+                    <button id="cancelSendBtn" class="btn btn-secondary" disabled>
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+
+                <div class="status" id="sendStatus"></div>
+            </div>
+
+            <!-- Receive Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-icon">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <h2 class="panel-title">Receive Files</h2>
+                </div>
+
+                <div class="form-group">
+                    <label for="connectSessionId" class="form-label">Enter Session ID</label>
+                    <input type="text" id="connectSessionId" class="form-control"
+                        placeholder="Paste the session ID here">
+                </div>
+
+                <div class="connection-status">
+                    <div class="status-indicator disconnected" id="connectionStatus"></div>
+                    <span id="connectionStatusText">Disconnected</span>
+                </div>
+
+                <div class="progress-container" id="receiveProgressContainer" style="display: none;">
+                    <div class="progress-info">
+                        <span>Receiving progress</span>
+                        <span id="receiveProgressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="receiveProgressFill"></div>
+                    </div>
+                    <div class="speed-indicator" id="receiveSpeedIndicator">-</div>
+                </div>
+
+                <div class="file-info" id="receiveFileInfo" style="display: none;">
+                    <div class="file-info-item">
+                        <span class="file-info-label">Receiving:</span>
+                        <span id="receivingFileName">-</span>
+                    </div>
+                    <div class="file-info-item">
+                        <span class="file-info-label">File size:</span>
+                        <span id="receivingFileSize">-</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="connectBtn" class="btn">
+                        <i class="fas fa-plug"></i> Connect
+                    </button>
+                    <button id="cancelReceiveBtn" class="btn btn-secondary" disabled>
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button id="downloadBtn" class="btn" style="display: none;">
+                        <i class="fas fa-download"></i> Download File
+                    </button>
+                </div>
+
+                <div class="status" id="receiveStatus"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase and WebRTC Libraries -->
+    <!-- <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script> -->
+
+    <!-- Main Application Script -->
+    <script src="app.js"></script>
+
+    <!-- QR Code Library (optional) -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script> -->
+</body>
+
+</html>
